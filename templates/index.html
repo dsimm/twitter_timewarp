@@ -67,6 +67,26 @@
       };
       createCodeFlower(jsonData)
 
+      // intervalId = setInterval(function(){console.log("Test")}, 1000);
+      // intervalId = setInterval(get_current_twitter_network, 1000);
+      setTimeout(get_current_twitter_network, 3000);
+
+
+      function get_current_twitter_network()  {
+        $.ajax({
+          url: "/get_twitter_data"
+          // beforeSend: function( xhr ) {
+          //   xhr.overrideMimeType( "text/json; charset=x-user-defined" );
+          // }
+        }).done(function( data ) {
+            if ( console && console.log ) {
+              console.log( "Sample of data:", data.slice( 0, 100 ) );
+              // jsonObj = $.parseJSON(data);
+              createCodeFlower(data);
+            }
+        });
+      }
+
       // d3.json(jsonData, createCodeFlower);
 
       // document.getElementById('project').addEventListener('change', function() {
