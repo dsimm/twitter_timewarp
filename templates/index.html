@@ -81,8 +81,7 @@
         }).done(function( data ) {
             if ( console && console.log ) {
               console.log( "Sample of data:", data.slice( 0, 100 ) );
-              // jsonObj = $.parseJSON(data);
-              createCodeFlower(data);
+              createCodeFlower($.parseJSON(data));
             }
         });
       }
