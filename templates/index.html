@@ -5,8 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <meta name="description" content="">
-    <meta name="author" content="">
+    <meta name="description" content="The on hand web-application provides a time-depending network visualization of the distribution of a user-specified search-term used as <code>#hashtag</code> and its related <code>#hashtags</code> on Twitter. In short it visualizes the in- and decrease of the frequency over time (evolving 'buzzword' importance over time). Supporting technologies for the development of this prototype are Python2.7 [Flask, Pattern] in interplay with Redis and 3D.js.">
+    <meta name="author" content="Dominic Simm, Aleksandar Spasojevic">
     <!-- <link rel="icon" href="http://getbootstrap.com/favicon.ico"> -->
     <link href="//abs.twimg.com/favicons/favicon.ico" rel="shortcut icon" type="image/x-icon">
 
@@ -34,19 +34,104 @@
     <!-- <script src="https://code.jquery.com/jquery-1.10.2.js"></script> -->
     <script src="{{ url_for('static', filename='lib/js/jquery/jquery.min.js') }}"></script>
 
-    // <script type=text/javascript>
-    //   $(function() {
-    //     $('a#calculate').bind('click', function() {
-    //       $.getJSON($SCRIPT_ROOT + '/get_twitter_data', {
-    //         a: $('input[name="a"]').val(),
-    //         b: $('input[name="b"]').val()
-    //       }, function(data) {
-    //         $("#result").text(data.result);
-    //       });
-    //       return false;
-    //     });
-    //   });
-    // </script>
+    <script src="{{ url_for('static', filename='lib/js/canvas.js') }}"></script>
+
+    <script type=text/javascript>
+      $(document).ready(function() {
+
+        // Set Ajax initial configuration
+        $.ajaxSetup ({
+            cache: false
+        });
+
+        // Define submit button action ('bind click event')
+        $('button#run_btn').bind('click', function(event) { get_twitter_data(); } );
+
+        function get_twitter_data() {
+          $.ajax({
+            url: "/get_twitter_data",
+            data: {
+                search_term: $('input[id="searchtext"]').val()
+            }
+          }).done(function( data ) {
+              if ( console && console.log ) {
+                prepend = "canvas = {}; canvas.element = document.getElementById('_ctx'); canvas.element = document.getElementById('_ctx');"
+                append  = "g.loop({frames:500, fps:30, ipf:2, weighted:0.5, directed:true});"
+                eval(prepend + data + append);
+                $("#graph").toggle(true);
+              }
+          });
+        }
+
+        function get_twitter_trends() {
+          $.ajax({
+            url: "/get_twitter_trends",
+          }).done(function( data ) {
+            $("#trends").html(data);
+            $("#trends").toggle(true);
+          });
+        }
+
+        function example()  {
+          // canvas = {}; 
+          // canvas.element = document.getElementById('_ctx');
+          // g = new Graph(canvas.element, 10.0);
+          // var n = {
+          //   "A320": {},
+          //   "#a320": {},
+          //   "#germanwings": {},
+          //   "#gye": {},
+          //   "#arroz": {},
+          //   "#lubitz": {},
+          //   "#lufthansa": {},
+          //   "#crash": {},
+          //   "#andreaslubitz": {}
+          // };
+          // var e = [
+          //   ["A320", "#a320", {type:"is-related-to"}],
+          //   ["#a320", "#a320", {type:"is-related-to"}],
+          //   ["#a320", "#germanwings", {type:"is-related-to"}],
+          //   ["#germanwings", "#germanwings", {type:"is-related-to"}],
+          //   ["A320", "#germanwings", {type:"is-related-to"}],
+          //   ["A320", "#gye", {type:"is-related-to"}],
+          //   ["#gye", "#arroz", {type:"is-related-to"}],
+          //   ["#arroz", "#arroz", {type:"is-related-to"}],
+          //   ["#arroz", "#gye", {type:"is-related-to"}],
+          //   ["#gye", "#gye", {type:"is-related-to"}],
+          //   ["#germanwings", "#lubitz", {type:"is-related-to"}],
+          //   ["#lubitz", "#germanwings", {type:"is-related-to"}],
+          //   ["#lubitz", "#lubitz", {type:"is-related-to"}],
+          //   ["#lubitz", "#lufthansa", {type:"is-related-to"}],
+          //   ["#lufthansa", "#germanwings", {type:"is-related-to"}],
+          //   ["#lufthansa", "#lubitz", {type:"is-related-to"}],
+          //   ["#lufthansa", "#lufthansa", {type:"is-related-to"}],
+          //   ["#germanwings", "#lufthansa", {type:"is-related-to"}],
+          //   ["#a320", "#crash", {type:"is-related-to"}],
+          //   ["#crash", "#crash", {type:"is-related-to"}],
+          //   ["#crash", "#germanwings", {type:"is-related-to"}],
+          //   ["#crash", "#andreaslubitz", {type:"is-related-to"}],
+          //   ["#andreaslubitz", "#crash", {type:"is-related-to"}],
+          //   ["#andreaslubitz", "#germanwings", {type:"is-related-to"}],
+          //   ["#andreaslubitz", "#andreaslubitz", {type:"is-related-to"}]
+          // ];
+          // for (var id in n) {
+          //   g.addNode(id, n[id]);
+          // }
+          // for (var i=0; i < e.length; i++) {
+          //   var n1 = g.nodeset[e[i][0]];
+          //   var n2 = g.nodeset[e[i][1]];
+          //   g.addEdge(n1, n2, e[i][2]);
+          // }
+          // g.loop({frames:500, fps:30, ipf:2, weighted:0.5, directed:true});          
+          // $("#graph").toggle(true);
+        }
+
+        // Load initial data
+        get_twitter_trends()
+        example();
+
+      });
+    </script>
 
     <!-- Define SVG-elements -->
     <style type="text/css">
@@ -121,23 +206,30 @@
         <p class="lead" style="display:block;">The app gives you recent associated <code>#hashtag</code>'s on Twitter given a <code>#hashtag</code></p>
 
         <!-- Form section -->
-        <form style="padding-bottom:8px;">
-          <div class="panel panel-default">
-            <div class="panel-heading" style="text-align: left;">Insert search-term your interested in:</div>
+        <!-- <form action="/get_twitter_data" method="GET" enctype="text/plain" style="padding-bottom:8px;"> -->
+          <div class="panel panel-primary">
+            <div class="panel-heading" style="text-align: left;">Insert a search-term you're interested in:</div>
             <div class="panel-body">
               <div class="input-group" style="width:80%; float:left;">
                 <span class="input-group-addon" id="basic-addon1">#</span>
                 <input id="searchtext" type="text" class="form-control" placeholder="search_term" aria-describedby="basic-addon1">
               </div>
-              <button type="submit" class="btn btn-primary" id="run_btn" onclick="on_click">Run</button>
+              <button type="submit" class="btn btn-primary" id="run_btn">Run</button>
+              <h5 style="color:#666; text-align:left;">Top-10 trending topics</h5>
+              <div id="trends" style="clear:both" class="btn-toolbar" role="toolbar" aria-label="Top-10 trending topics"></div>              
             </div>
           </div>
-        </form>
+        <!-- </form> -->
 
         <!-- Result section -->
-        {% for hashtag in hashtags %}
+        <div id="result" style="display: none;"></div>
+        <div id="graph" style="display: none; width:360px; height:240px;">
+            <canvas id="_ctx" width="360" height="240"></canvas>
+        </div>
+
+<!--         {% for hashtag in hashtags %}
           <li><a>{{ hashtag }}</a></li>
-        {% endfor %}
+        {% endfor %} -->
       </div>
 
     </div><!-- /.container -->
@@ -146,9 +238,8 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="{{ url_for('static', filename='lib/js/jquery/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='lib/js/bootstrap/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='lib/js/bootstrap/ie10-viewport-bug-workaround.js') }}"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="{{ url_for('static', filename='lib/js/bootstrap/ie10-viewport-bug-workaround.js') }}"></script>
 
 <div id="feedly-mini" title="feedly Mini tookit"></div></body></html>
