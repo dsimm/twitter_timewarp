@@ -34,6 +34,10 @@
     <!-- <script src="https://code.jquery.com/jquery-1.10.2.js"></script> -->
     <script src="{{ url_for('static', filename='lib/js/jquery/jquery.min.js') }}"></script>
 
+    <!-- Include D3.js -->
+    <script src="{{ url_for('static', filename='lib/js/d3/d3.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/js/d3/d3.geom.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/js/d3/d3.layout.js') }}"></script>
     <script src="{{ url_for('static', filename='lib/js/canvas.js') }}"></script>
 
     <script type=text/javascript>
@@ -55,10 +59,14 @@
             }
           }).done(function( data ) {
               if ( console && console.log ) {
-                prepend = "canvas = {}; canvas.element = document.getElementById('_ctx'); canvas.element = document.getElementById('_ctx');"
+                response = $.parseJSON(data);
+                console.log(response);
+                prepend = "canvas = {}; canvas.element = document.getElementById('_ctx'); (typeof g !== 'undefined') ? g.clear() : '';"
                 append  = "g.loop({frames:500, fps:30, ipf:2, weighted:0.5, directed:true});"
-                eval(prepend + data + append);
+                eval(prepend + response.js_code + append);
                 $("#graph").toggle(true);
+
+                create_histogram(response.hashtags_occur);
               }
           });
         }
@@ -127,11 +135,209 @@
         }
 
         // Load initial data
-        get_twitter_trends()
+        get_twitter_trends();
         example();
+        // create_histogram("hallo");
 
       });
     </script>
+
+    <!-- D3.js section -->
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+    <script>
+
+    function d3_example_histogram() {
+      // Generate a Bates distribution of 10 random variables.
+      // var values = d3.range(1000).map(d3.random.bates(10));
+      var values = d3.range(1000).map(d3.random.bates(10));
+
+      // A formatter for counts.
+      var formatCount = d3.format(",.0f");
+
+      var margin = {top: 10, right: 30, bottom: 30, left: 30},
+          width = 960 - margin.left - margin.right,
+          height = 100 - margin.top - margin.bottom;
+
+      var x = d3.scale.linear()
+          .domain([0, 1])
+          .range([0, width]);
+
+      // Generate a histogram using twenty uniformly-spaced bins.
+      var data = d3.layout.histogram()
+          .bins(x.ticks(20))
+          (values);
+
+      var y = d3.scale.linear()
+          .domain([0, d3.max(data, function(d) { return d.y; })])
+          .range([height, 0]);
+
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom");
+
+      var svg = d3.select("body").append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      var bar = svg.selectAll(".bar")
+          .data(data)
+        .enter().append("g")
+          .attr("class", "bar")
+          .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+      bar.append("rect")
+          .attr("x", 1)
+          .attr("width", x(data[0].dx) - 1)
+          .attr("height", function(d) { return height - y(d.y); });
+
+      bar.append("text")
+          .attr("dy", ".75em")
+          .attr("y", 6)
+          .attr("x", x(data[0].dx) / 2)
+          .attr("text-anchor", "middle")
+          .text(function(d) { return formatCount(d.y); });
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis);
+    }
+
+    function create_histogram(hist_csv)  {
+      var margin = {top: 10, right: 30, bottom: 30, left: 30},
+          width = 960 - margin.left - margin.right,
+          height = 120 - margin.top - margin.bottom;
+
+      // Parse the date / time
+      var parseDate = d3.time.format("%Y-%m").parse;
+
+      var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+
+      var y = d3.scale.linear().range([height, 0]);
+
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom");
+          // .tickFormat(d3.time.format("%Y-%m"));
+
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left")
+          .ticks(10);
+
+      var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-10, 0])
+        .html(function(d) {
+          return "<strong>Hashtag:</strong> <span style='color:red'>" + d.hashtag + "</span></br><strong>Frequency:</strong> <span style='color:red'>" + d.frequency + "</span>";
+        })
+
+      // var svg = d3.select("body").append("svg")
+      var svg = d3.select(".panel-body").append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .style("font-size","6px")
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      svg.call(tip);
+
+      data = d3.csv.parse(hist_csv);
+      if (data) {
+          data.forEach(function(d) {
+              d.date = d.hashtag;
+              d.value = +d.frequency;
+          });
+       
+        x.domain(data.map(function(d) { return d.date; }));
+        y.domain([0, d3.max(data, function(d) { return d.value; })]);
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis)
+          .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", "-.55em")
+            .attr("transform", "rotate(-90)" );
+
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+          .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text("Occurences");
+
+        svg.selectAll("bar")
+            .data(data)
+          .enter().append("rect")
+            .style("fill", "steelblue")
+            .attr("x", function(d) { return x(d.date); })
+            .attr("width", x.rangeBand())
+            .attr("y", function(d) { return y(d.value); })
+            .attr("height", function(d) { return height - y(d.value); })
+            .on('mouseover', tip.show)
+            .on('mouseout', tip.hide);
+      }      
+    }
+    </script>    
+
+    <style type="text/css">
+      .bar rect {
+        fill: steelblue;
+        shape-rendering: crispEdges;
+      }
+
+      .bar text {
+        fill: #fff;
+      }
+
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+
+      .bar:hover {
+        fill: orangered ;
+      }
+
+      .d3-tip {
+        line-height: 1;
+        font-weight: bold;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        border-radius: 2px;
+      }
+
+      /* Creates a small triangle extender for the tooltip */
+      .d3-tip:after {
+        box-sizing: border-box;
+        display: inline;
+        font-size: 10px;
+        width: 100%;
+        line-height: 1;
+        color: rgba(0, 0, 0, 0.8);
+        content: "\25BC";
+        position: absolute;
+        text-align: center;
+      }
+
+      /* Style northward tooltips differently */
+      .d3-tip.n:after {
+        margin: -1px 0 0 0;
+        top: 100%;
+        left: 0;
+      }
+    </style>
 
     <!-- Define SVG-elements -->
     <style type="text/css">
@@ -216,15 +422,15 @@
               </div>
               <button type="submit" class="btn btn-primary" id="run_btn">Run</button>
               <h5 style="color:#666; text-align:left;">Top-10 trending topics</h5>
-              <div id="trends" style="clear:both" class="btn-toolbar" role="toolbar" aria-label="Top-10 trending topics"></div>              
+              <div id="trends" style="clear:both; margin-bottom:8px;" class="btn-toolbar" role="toolbar" aria-label="Top-10 trending topics"></div>              
             </div>
           </div>
         <!-- </form> -->
 
         <!-- Result section -->
         <div id="result" style="display: none;"></div>
-        <div id="graph" style="display: none; width:360px; height:240px;">
-            <canvas id="_ctx" width="360" height="240"></canvas>
+        <div id="graph" style="display: none; text-align:center; height:600px;">
+            <canvas id="_ctx" width="800" height="600"></canvas>
         </div>
 
 <!--         {% for hashtag in hashtags %}

@@ -1,5 +1,5 @@
                 <div class="btn-group" role="group" aria-label="Trending topics">
                 {% for trend in trends %}
-                  <button type="button" class="btn btn-default" onclick="$('#searchtext').val(this.value);" value="{{ trend[1:] if trend[0] == '#' else trend }}">{{ trend }}</button>
+                  <button type="button" class="btn btn-default" style="font-size:12px; padding:4px;" onclick="$('#searchtext').val(this.value);" value="{{ trend[1:] if trend[0] == '#' else trend }}">{{ trend }}</button>
                 {% endfor %}
                 </div>              
